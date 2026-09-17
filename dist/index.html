@@ -43,12 +43,11 @@
         </section>
 
         <section class="editor-section" aria-labelledby="table-heading">
-          <div class="section-heading table-heading-row">
+          <div class="section-heading">
             <div>
               <span class="step-number">02</span>
               <h2 id="table-heading">日程表格</h2>
             </div>
-            <button class="button button-primary" id="addRow" type="button">＋ 添加一行</button>
           </div>
 
           <div class="table-wrap">
@@ -60,7 +59,6 @@
                   <th class="col-label">时间 / 标签</th>
                   <th>内容</th>
                   <th class="col-check">重点</th>
-                  <th class="col-check">摘要</th>
                   <th class="col-actions"><span class="sr-only">操作</span></th>
                 </tr>
               </thead>
@@ -68,7 +66,11 @@
             </table>
           </div>
 
-          <p class="table-hint">相邻且日期、标题相同的行会自动合并为一张卡片。摘要行只显示粗体标题。</p>
+          <div class="table-footer">
+            <button class="button button-add-row" id="addRow" type="button">＋ 添加一行</button>
+          </div>
+
+          <p class="table-hint">相邻且日期、标题相同的行会自动合并为一张卡片。时间和内容均为空时，自动生成只有粗体标题的单行卡片。</p>
 
           <details class="paste-panel">
             <summary>批量粘贴表格</summary>

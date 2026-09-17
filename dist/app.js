@@ -29,7 +29,7 @@
       row("10.3", "广州-南宁🚗", "同行", "嘉宜、老王、chuly、胡同学", false),
       row("10.4", "南宁-曲靖🚗", "09:30", "南宁出发去曲靖", false),
       row("10.4", "南宁-曲靖🚗", "抵达后", "休整，可能开始布置", false),
-      row("10.5", "全天  婚礼布置💐", "", "", false, true),
+      row("10.5", "全天  婚礼布置💐", "", "", false),
       row("10.6", "嘉宜婚礼👰", "09:00", "🚗出门（时间沟通中）", true),
       row("10.6", "嘉宜婚礼👰", "流程", "接亲、吃席、玩、拍照、吃席", true),
       row("10.7", "回程✈️", "早上", "机场", false)
@@ -62,8 +62,8 @@
     return "r_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
   }
 
-  function row(date, title, label, content, highlight, summary) {
-    return { id: uid(), date, title, label, content, highlight: !!highlight, summary: !!summary };
+  function row(date, title, label, content, highlight) {
+    return { id: uid(), date, title, label, content, highlight: !!highlight };
   }
 
   function clone(value) {
@@ -87,7 +87,6 @@
         <td><input type="text" data-field="label" value="${escapeHtml(item.label)}" aria-label="第 ${index + 1} 行时间或标签" /></td>
         <td><input type="text" data-field="content" value="${escapeHtml(item.content)}" aria-label="第 ${index + 1} 行内容" /></td>
         <td class="check-cell"><input type="checkbox" data-field="highlight" ${item.highlight ? "checked" : ""} aria-label="第 ${index + 1} 行设为重点日期" /></td>
-        <td class="check-cell"><input type="checkbox" data-field="summary" ${item.summary ? "checked" : ""} aria-label="第 ${index + 1} 行设为摘要卡" /></td>
         <td>
           <div class="row-actions">
             <button class="icon-button" type="button" data-action="up" title="上移" aria-label="上移第 ${index + 1} 行">↑</button>
@@ -114,7 +113,7 @@
         label: item.label.trim(),
         content: item.content.trim(),
         highlight: !!item.highlight,
-        summary: !!item.summary
+        summary: !item.label.trim() && !item.content.trim()
       };
       if (clean.summary) {
         cards.push({ ...clean, details: [] });
@@ -358,7 +357,7 @@
       const columns = line.split(/\t|[｜|]/).map((value) => value.trim());
       if (columns.length < 4) return;
       const flags = columns.slice(4).join(" ");
-      parsed.push(row(columns[0], columns[1], columns[2], columns[3], /重点|是|yes/i.test(flags), /摘要|summary/i.test(flags)));
+      parsed.push(row(columns[0], columns[1], columns[2], columns[3], /重点|是|yes/i.test(flags)));
     });
     if (!parsed.length) {
       els.parseStatus.textContent = "没有识别到有效行，请按示例使用竖线或制表符分隔。";
@@ -381,8 +380,7 @@
         String(item.title || ""),
         String(item.label || ""),
         String(item.content || ""),
-        Boolean(item.highlight),
-        Boolean(item.summary)
+        Boolean(item.highlight)
       );
     });
     state.title = String(input.title || "未命名日程");
@@ -415,8 +413,7 @@
               title: { type: "string" },
               label: { type: "string" },
               content: { type: "string" },
-              highlight: { type: "boolean" },
-              summary: { type: "boolean" }
+              highlight: { type: "boolean" }
             },
             required: ["date", "title", "label", "content"],
             additionalProperties: false
