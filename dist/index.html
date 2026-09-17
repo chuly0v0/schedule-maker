@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="填写日程表格，实时生成固定格式的手机竖版长图。" />
+    <title>日程长图生成器</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="workspace">
+      <section class="editor-panel" aria-label="日程编辑区">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">SCHEDULE MAKER</p>
+            <h1>日程长图生成器</h1>
+          </div>
+          <button class="button button-quiet" id="resetExample" type="button">恢复示例</button>
+        </header>
+
+        <section class="editor-section settings-section" aria-labelledby="basic-heading">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">01</span>
+              <h2 id="basic-heading">图片标题</h2>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <label class="field field-wide">
+              <span>主标题</span>
+              <input id="scheduleTitle" value="国庆日程😊" maxlength="30" />
+            </label>
+            <label class="field">
+              <span>日期范围</span>
+              <input id="dateRange" value="9.28—10.7" maxlength="24" />
+            </label>
+            <label class="field">
+              <span>说明</span>
+              <input id="scheduleDescription" value="嘉宜&amp;毛sin婚礼💐" maxlength="40" />
+            </label>
+          </div>
+        </section>
+
+        <section class="editor-section" aria-labelledby="table-heading">
+          <div class="section-heading table-heading-row">
+            <div>
+              <span class="step-number">02</span>
+              <h2 id="table-heading">日程表格</h2>
+            </div>
+            <button class="button button-primary" id="addRow" type="button">＋ 添加一行</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th class="col-date">日期</th>
+                  <th class="col-title">卡片标题</th>
+                  <th class="col-label">时间 / 标签</th>
+                  <th>内容</th>
+                  <th class="col-check">重点</th>
+                  <th class="col-check">摘要</th>
+                  <th class="col-actions"><span class="sr-only">操作</span></th>
+                </tr>
+              </thead>
+              <tbody id="scheduleRows"></tbody>
+            </table>
+          </div>
+
+          <p class="table-hint">相邻且日期、标题相同的行会自动合并为一张卡片。摘要行只显示粗体标题。</p>
+
+          <details class="paste-panel">
+            <summary>批量粘贴表格</summary>
+            <p>每行依次填写：日期｜卡片标题｜时间或标签｜内容｜重点。相同日期和标题可以连续填写。</p>
+            <textarea id="pasteInput" rows="5" placeholder="9.28｜嘉宜结婚👰｜13:30｜嘉宜开始化妆💄｜重点&#10;9.28｜嘉宜结婚👰｜15:00｜到嘉宜家🚗｜重点"></textarea>
+            <div class="paste-actions">
+              <button class="button button-secondary" id="parseRows" type="button">解析并替换表格</button>
+              <span class="inline-status" id="parseStatus" aria-live="polite"></span>
+            </div>
+          </details>
+        </section>
+
+        <section class="editor-section export-section" aria-labelledby="export-heading">
+          <div class="section-heading">
+            <div>
+              <span class="step-number">03</span>
+              <h2 id="export-heading">导出图片</h2>
+            </div>
+          </div>
+          <div class="export-buttons">
+            <button class="button button-dark" id="downloadPng" type="button">下载 PNG</button>
+            <button class="button button-secondary" id="downloadPng2x" type="button">下载高清 PNG</button>
+            <button class="button button-secondary" id="downloadSvg" type="button">下载 SVG</button>
+          </div>
+          <p class="export-note" id="exportNote">标准 PNG 宽 820 px；高清 PNG 宽 1640 px。</p>
+        </section>
+      </section>
+
+      <section class="preview-panel" aria-label="图片预览区">
+        <div class="preview-toolbar">
+          <div>
+            <p class="preview-kicker">实时预览</p>
+            <p class="preview-size" id="previewSize">820 × 1670 px</p>
+          </div>
+          <div class="zoom-control" role="group" aria-label="预览缩放">
+            <button type="button" data-zoom="0.5">50%</button>
+            <button type="button" class="active" data-zoom="0.75">75%</button>
+            <button type="button" data-zoom="1">100%</button>
+          </div>
+        </div>
+        <div class="preview-scroll" id="previewScroll">
+          <div class="canvas-shell" id="canvasShell">
+            <canvas id="scheduleCanvas" aria-label="生成的日程长图预览"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
