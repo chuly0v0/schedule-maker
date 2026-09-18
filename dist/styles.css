@@ -36,7 +36,7 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(680px, 48%) minmax(520px, 1fr);
+  grid-template-columns: minmax(680px, 60%) minmax(520px, 1fr);
   min-height: 100vh;
 }
 
@@ -60,6 +60,12 @@ button {
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 34px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .eyebrow,
@@ -96,6 +102,8 @@ h2 {
 }
 
 .section-heading {
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 18px;
 }
 
@@ -198,6 +206,11 @@ textarea:focus {
   vertical-align: middle;
 }
 
+.schedule-table td.group-cell {
+  background: #fff;
+  vertical-align: middle;
+}
+
 .schedule-table tbody tr:hover {
   background: #fbfcfd;
 }
@@ -227,7 +240,7 @@ textarea:focus {
 }
 
 .col-title {
-  width: 126px;
+  width: 148px;
 }
 
 .col-label {
@@ -262,6 +275,38 @@ textarea:focus {
 
 .check-cell {
   text-align: center;
+}
+
+.group-title-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.group-title-control input {
+  min-width: 0;
+  flex: 1;
+}
+
+.group-add-button {
+  display: inline-grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--blue);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.group-add-button:hover,
+.group-add-button:focus-visible {
+  background: #eaf4ff;
 }
 
 .row-actions {
@@ -330,6 +375,17 @@ textarea:focus {
   background: #f7f9fb;
 }
 
+.button-danger {
+  border-color: #ffd0d0;
+  background: #fff5f5;
+  color: #c42f2f;
+}
+
+.button-danger:hover {
+  border-color: #f1a9a9;
+  background: #ffeaea;
+}
+
 .button-dark {
   background: #111318;
   color: #fff;
@@ -373,6 +429,37 @@ textarea:focus {
 .paste-actions {
   gap: 12px;
   margin-top: 10px;
+}
+
+.excel-import-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.paste-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 12px !important;
+  color: #7a8492;
+  font-size: 12px;
+}
+
+.paste-divider::before,
+.paste-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #e3e7ec;
+  content: "";
 }
 
 .inline-status {
@@ -510,6 +597,11 @@ textarea:focus {
 
   .app-header {
     align-items: flex-start;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   h1 {

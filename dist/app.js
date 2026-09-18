@@ -8,35 +8,35 @@
   const CARD_GAP = 18;
   const BOTTOM_SPACE = 143;
   const CONTENT_X = 168;
-  const LABEL_WIDTH = 60;
-  const LABEL_GAP = 10;
+  const LABEL_CONTENT_GAP = 10;
   const CONTENT_RIGHT_PADDING = 38;
+  const TITLE_BODY_BASELINE_GAP = 38;
+  const BODY_BASELINE_GAP = 30;
   const FONT_STACK = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+  const STORAGE_KEY = "schedule-maker-draft-v1";
 
   const initialState = {
-    title: "国庆日程😊",
-    dateRange: "9.28—10.7",
-    description: "嘉宜&毛sin婚礼💐",
+    title: "广州旅行计划🧳",
+    dateRange: "5.1-5.5",
+    description: "城市漫游・美食之旅🍜",
     rows: [
-      row("9.28", "嘉宜结婚👰", "13:30", "嘉宜开始化妆💄", true),
-      row("9.28", "嘉宜结婚👰", "15:00", "到嘉宜家🚗", true),
-      row("9.28", "嘉宜结婚👰", "晚上", "渔人码头吃席🍚", true),
-      row("10.1", "毛sin结婚👰", "09:00", "毛sin 家🏠", true),
-      row("10.1", "毛sin结婚👰", "中午", "吃席🍚", true),
-      row("10.1", "毛sin结婚👰", "随后", "接亲👰", true),
-      row("10.1", "毛sin结婚👰", "晚上", "男方家吃席🍚", true),
-      row("10.3", "广州-南宁🚗", "09:30", "出发去南宁，住一晚", false),
-      row("10.3", "广州-南宁🚗", "同行", "嘉宜、老王、chuly、胡同学", false),
-      row("10.4", "南宁-曲靖🚗", "09:30", "南宁出发去曲靖", false),
-      row("10.4", "南宁-曲靖🚗", "抵达后", "休整，可能开始布置", false),
-      row("10.5", "全天  婚礼布置💐", "", "", false),
-      row("10.6", "嘉宜婚礼👰", "09:00", "🚗出门（时间沟通中）", true),
-      row("10.6", "嘉宜婚礼👰", "流程", "接亲、吃席、玩、拍照、吃席", true),
-      row("10.7", "回程✈️", "早上", "机场", false)
+      row("5.1", "抵达广州🚄", "11:00", "到达广州南站", false),
+      row("5.1", "抵达广州🚄", "12:00", "入住酒店，寄存行李", false),
+      row("5.1", "抵达广州🚄", "下午", "沙面与永庆坊散步", false),
+      row("5.2", "打卡广州塔🌆", "10:00-12:00", "正佳广场", true),
+      row("5.2", "打卡广州塔🌆", "中午", "喝午茶", true),
+      row("5.2", "打卡广州塔🌆", "下午", "广州塔", true),
+      row("5.2", "打卡广州塔🌆", "18:00", "琶醍江边晚餐", true),
+      row("5.3", "旧城区漫游🍜", "09:30-11:30", "兰圃", true),
+      row("5.3", "旧城区漫游🍜", "中午", "西华路品尝地道小吃", true),
+      row("5.3", "旧城区漫游🍜", "下午", "南越王博物馆", true),
+      row("5.4", "长隆野生动物世界🐼", "", "", false),
+      row("5.5", "返程🏠", "16:00", "前往广州南站", false),
+      row("5.5", "返程🏠", "18:00", "乘高铁返程", false)
     ]
   };
 
-  let state = clone(initialState);
+  let state = loadSavedState();
   let zoom = 0.75;
   let renderFrame = 0;
 
@@ -46,6 +46,8 @@
     description: document.querySelector("#scheduleDescription"),
     rows: document.querySelector("#scheduleRows"),
     addRow: document.querySelector("#addRow"),
+    exportTable: document.querySelector("#exportTable"),
+    clear: document.querySelector("#clearSchedule"),
     reset: document.querySelector("#resetExample"),
     canvas: document.querySelector("#scheduleCanvas"),
     shell: document.querySelector("#canvasShell"),
@@ -53,6 +55,8 @@
     pasteInput: document.querySelector("#pasteInput"),
     parseRows: document.querySelector("#parseRows"),
     parseStatus: document.querySelector("#parseStatus"),
+    excelFile: document.querySelector("#excelFile"),
+    excelStatus: document.querySelector("#excelStatus"),
     downloadPng: document.querySelector("#downloadPng"),
     downloadPng2x: document.querySelector("#downloadPng2x"),
     downloadSvg: document.querySelector("#downloadSvg")
@@ -70,6 +74,42 @@
     return JSON.parse(JSON.stringify(value));
   }
 
+  function loadSavedState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return clone(initialState);
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.rows)) return clone(initialState);
+      return {
+        title: String(parsed.title ?? ""),
+        dateRange: String(parsed.dateRange ?? ""),
+        description: String(parsed.description ?? ""),
+        rows: parsed.rows.map((item) => row(
+          String(item?.date ?? ""),
+          String(item?.title ?? ""),
+          String(item?.label ?? ""),
+          String(item?.content ?? ""),
+          Boolean(item?.highlight)
+        ))
+      };
+    } catch (_) {
+      return clone(initialState);
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        title: state.title,
+        dateRange: state.dateRange,
+        description: state.description,
+        rows: state.rows.map(({ date, title, label, content, highlight }) => ({ date, title, label, content, highlight }))
+      }));
+    } catch (_) {
+      // The editor still works when browser storage is unavailable.
+    }
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -79,14 +119,46 @@
       .replaceAll("'", "&#039;");
   }
 
+  function getTableGroups(rows) {
+    const groups = [];
+    rows.forEach((item) => {
+      const previous = groups[groups.length - 1];
+      const hasIdentity = item.date.trim() || item.title.trim();
+      const canMerge = hasIdentity && previous && previous.date === item.date && previous.title === item.title;
+      if (canMerge) previous.items.push(item);
+      else groups.push({ date: item.date, title: item.title, items: [item] });
+    });
+    return groups;
+  }
+
   function renderTable() {
-    els.rows.innerHTML = state.rows.map((item, index) => `
+    const groupById = new Map();
+    getTableGroups(state.rows).forEach((group) => {
+      const ids = group.items.map((item) => item.id).join(",");
+      group.items.forEach((item, position) => groupById.set(item.id, {
+        ids,
+        rowspan: group.items.length,
+        isFirst: position === 0
+      }));
+    });
+
+    els.rows.innerHTML = state.rows.map((item, index) => {
+      const group = groupById.get(item.id);
+      const mergedCells = group.isFirst ? `
+        <td class="check-cell group-cell" rowspan="${group.rowspan}" data-group-ids="${group.ids}"><input type="checkbox" data-field="highlight" ${item.highlight ? "checked" : ""} aria-label="第 ${index + 1} 组设为重点日期" /></td>
+        <td class="group-cell" rowspan="${group.rowspan}" data-group-ids="${group.ids}"><input type="text" data-field="date" value="${escapeHtml(item.date)}" aria-label="第 ${index + 1} 组日期" /></td>
+        <td class="group-cell" rowspan="${group.rowspan}" data-group-ids="${group.ids}">
+          <div class="group-title-control">
+            <input type="text" data-field="title" value="${escapeHtml(item.title)}" aria-label="第 ${index + 1} 组卡片标题" />
+            <button class="group-add-button" type="button" data-action="add-group-row" data-group-ids="${group.ids}" title="为此卡片增加一条内容" aria-label="为${escapeHtml(item.title || "此卡片")}增加一条内容">＋</button>
+          </div>
+        </td>
+      ` : "";
+      return `
       <tr data-id="${item.id}">
-        <td><input type="text" data-field="date" value="${escapeHtml(item.date)}" aria-label="第 ${index + 1} 行日期" /></td>
-        <td><input type="text" data-field="title" value="${escapeHtml(item.title)}" aria-label="第 ${index + 1} 行卡片标题" /></td>
+        ${mergedCells}
         <td><input type="text" data-field="label" value="${escapeHtml(item.label)}" aria-label="第 ${index + 1} 行时间或标签" /></td>
         <td><input type="text" data-field="content" value="${escapeHtml(item.content)}" aria-label="第 ${index + 1} 行内容" /></td>
-        <td class="check-cell"><input type="checkbox" data-field="highlight" ${item.highlight ? "checked" : ""} aria-label="第 ${index + 1} 行设为重点日期" /></td>
         <td>
           <div class="row-actions">
             <button class="icon-button" type="button" data-action="up" title="上移" aria-label="上移第 ${index + 1} 行">↑</button>
@@ -95,7 +167,8 @@
           </div>
         </td>
       </tr>
-    `).join("");
+    `;
+    }).join("");
   }
 
   function syncHeaderInputs() {
@@ -107,25 +180,35 @@
   function groupCards(rows) {
     const cards = [];
     rows.forEach((item) => {
+      const sourceDate = item.date.trim();
+      const sourceTitle = item.title.trim();
       const clean = {
-        date: item.date.trim() || "—",
-        title: item.title.trim() || "未命名日程",
+        date: sourceDate || "—",
+        title: sourceTitle || "未命名日程",
         label: item.label.trim(),
         content: item.content.trim(),
-        highlight: !!item.highlight,
-        summary: !item.label.trim() && !item.content.trim()
+        highlight: !!item.highlight
       };
-      if (clean.summary) {
-        cards.push({ ...clean, details: [] });
-        return;
-      }
       const previous = cards[cards.length - 1];
-      const canMerge = previous && !previous.summary && previous.date === clean.date && previous.title === clean.title && previous.highlight === clean.highlight;
-      const detail = { label: clean.label, content: clean.content };
-      if (canMerge) previous.details.push(detail);
-      else cards.push({ date: clean.date, title: clean.title, highlight: clean.highlight, summary: false, details: [detail] });
+      const hasIdentity = sourceDate || sourceTitle;
+      const canMerge = hasIdentity && previous && previous.sourceDate === sourceDate && previous.sourceTitle === sourceTitle;
+      const hasDetail = clean.label || clean.content;
+      if (canMerge) {
+        if (hasDetail) previous.details.push({ label: clean.label, content: clean.content });
+        previous.summary = previous.details.length === 0;
+      } else {
+        cards.push({
+          date: clean.date,
+          title: clean.title,
+          highlight: clean.highlight,
+          summary: !hasDetail,
+          details: hasDetail ? [{ label: clean.label, content: clean.content }] : [],
+          sourceDate,
+          sourceTitle
+        });
+      }
     });
-    return cards;
+    return cards.map(({ sourceDate, sourceTitle, ...card }) => card);
   }
 
   function createMeasureContext(scale) {
@@ -160,16 +243,23 @@
   function buildLayout() {
     const measure = createMeasureContext(1);
     setFont(measure, 400, 20);
-    const maxContentWidth = CARD_WIDTH - CONTENT_X - LABEL_WIDTH - LABEL_GAP - CONTENT_RIGHT_PADDING;
     const cards = groupCards(state.rows).map((card) => {
       if (card.summary) return { ...card, height: 130, lineCount: 1, details: [] };
-      const details = card.details.map((detail) => ({
-        ...detail,
-        wrapped: wrapText(measure, detail.content, maxContentWidth)
-      }));
-      const lineCount = 1 + details.reduce((sum, detail) => sum + Math.max(1, detail.wrapped.length), 0);
-      const height = lineCount <= 2 ? 130 : 60 + lineCount * 30;
-      return { ...card, details, lineCount, height };
+      const details = card.details.map((detail) => {
+        const labelWidth = measure.measureText(detail.label).width;
+        const contentOffset = labelWidth ? labelWidth + LABEL_CONTENT_GAP : 0;
+        const maxContentWidth = Math.max(40, CARD_WIDTH - CONTENT_X - contentOffset - CONTENT_RIGHT_PADDING);
+        return {
+          ...detail,
+          contentOffset,
+          wrapped: wrapText(measure, detail.content, maxContentWidth)
+        };
+      });
+      const detailLineCount = details.reduce((sum, detail) => sum + Math.max(1, detail.wrapped.length), 0);
+      const lineCount = 1 + detailLineCount;
+      const contentHeight = 30 + TITLE_BODY_BASELINE_GAP + Math.max(0, detailLineCount - 1) * BODY_BASELINE_GAP;
+      const height = lineCount <= 2 ? 130 : contentHeight + 60;
+      return { ...card, details, lineCount, contentHeight, height };
     });
     const cardsHeight = cards.reduce((sum, card) => sum + card.height, 0);
     const height = FIRST_CARD_Y + cardsHeight + Math.max(0, cards.length - 1) * CARD_GAP + BOTTOM_SPACE;
@@ -197,6 +287,14 @@
     ctx.fillText(text, x, y);
   }
 
+  function drawBaselineText(ctx, text, x, baselineY, weight, size, color) {
+    setFont(ctx, weight, size);
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, baselineY);
+  }
+
   function renderDate(ctx, card, x, y) {
     const dateCenterX = x + 80;
     if (card.highlight) {
@@ -219,19 +317,19 @@
     renderDate(ctx, card, CARD_X, y);
     const contentX = CARD_X + CONTENT_X;
     if (card.summary) {
-      drawText(ctx, card.title, contentX, y + 50, 700, 26, "#000000");
+      drawBaselineText(ctx, card.title, contentX, y + 76, 700, 26, "#000000");
       return;
     }
-    const contentHeight = card.lineCount * 30;
-    let lineY = y + (card.lineCount >= 3 ? 30 : (card.height - contentHeight) / 2);
-    drawText(ctx, card.title, contentX, lineY, 700, 26, "#000000");
-    lineY += 30;
+    const contentTop = y + (card.height - card.contentHeight) / 2;
+    let baselineY = contentTop + 26;
+    drawBaselineText(ctx, card.title, contentX, baselineY, 700, 26, "#000000");
+    baselineY += TITLE_BODY_BASELINE_GAP;
     card.details.forEach((detail) => {
       const wrapped = detail.wrapped.length ? detail.wrapped : [""];
       wrapped.forEach((line, lineIndex) => {
-        if (lineIndex === 0) drawText(ctx, detail.label, contentX, lineY, 400, 20, "#343A46");
-        drawText(ctx, line, contentX + LABEL_WIDTH + LABEL_GAP, lineY, 400, 20, "#000000");
-        lineY += 30;
+        if (lineIndex === 0) drawBaselineText(ctx, detail.label, contentX, baselineY, 400, 20, "#343A46");
+        drawBaselineText(ctx, line, contentX + detail.contentOffset, baselineY, 400, 20, "#000000");
+        baselineY += BODY_BASELINE_GAP;
       });
     });
   }
@@ -275,6 +373,10 @@
     return `<text x="${x}" y="${y}" font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, Segoe UI Emoji, Apple Color Emoji, sans-serif" font-size="${size}" font-weight="${weight}" fill="${color}" dominant-baseline="text-before-edge"${anchor ? ` text-anchor="${anchor}"` : ""}>${escapeXml(text)}</text>`;
   }
 
+  function svgBaselineText(text, x, baselineY, weight, size, color) {
+    return `<text x="${x}" y="${baselineY}" font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, Segoe UI Emoji, Apple Color Emoji, sans-serif" font-size="${size}" font-weight="${weight}" fill="${color}">${escapeXml(text)}</text>`;
+  }
+
   function escapeXml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -305,17 +407,17 @@
       }
       const contentX = CARD_X + CONTENT_X;
       if (card.summary) {
-        parts.push(svgText(card.title, contentX, y + 50, 700, 26, "#000000"));
+        parts.push(svgBaselineText(card.title, contentX, y + 76, 700, 26, "#000000"));
       } else {
-        const contentHeight = card.lineCount * 30;
-        let lineY = y + (card.lineCount >= 3 ? 30 : (card.height - contentHeight) / 2);
-        parts.push(svgText(card.title, contentX, lineY, 700, 26, "#000000"));
-        lineY += 30;
+        const contentTop = y + (card.height - card.contentHeight) / 2;
+        let baselineY = contentTop + 26;
+        parts.push(svgBaselineText(card.title, contentX, baselineY, 700, 26, "#000000"));
+        baselineY += TITLE_BODY_BASELINE_GAP;
         card.details.forEach((detail) => {
           detail.wrapped.forEach((line, index) => {
-            if (index === 0) parts.push(svgText(detail.label, contentX, lineY, 400, 20, "#343A46"));
-            parts.push(svgText(line, contentX + LABEL_WIDTH + LABEL_GAP, lineY, 400, 20, "#000000"));
-            lineY += 30;
+            if (index === 0) parts.push(svgBaselineText(detail.label, contentX, baselineY, 400, 20, "#343A46"));
+            parts.push(svgBaselineText(line, contentX + detail.contentOffset, baselineY, 400, 20, "#000000"));
+            baselineY += BODY_BASELINE_GAP;
           });
         });
       }
@@ -350,6 +452,142 @@
     }, "image/png");
   }
 
+  function requireExcelLibrary() {
+    if (!window.XLSX) throw new Error("Excel 组件未能加载，请确认 vendor 文件夹与 HTML 位于同一目录中。");
+    return window.XLSX;
+  }
+
+  function exportTable() {
+    try {
+      const XLSX = requireExcelLibrary();
+      const tableRows = state.rows.map((item) => ({
+        "重点": item.highlight ? "是" : "否",
+        "日期": item.date,
+        "卡片标题": item.title,
+        "时间/标签": item.label,
+        "内容": item.content
+      }));
+      const tableSheet = XLSX.utils.json_to_sheet(tableRows, {
+        header: ["重点", "日期", "卡片标题", "时间/标签", "内容"]
+      });
+      tableSheet["!cols"] = [{ wch: 8 }, { wch: 12 }, { wch: 24 }, { wch: 18 }, { wch: 42 }];
+      if (tableRows.length) tableSheet["!autofilter"] = { ref: `A1:E${tableRows.length + 1}` };
+
+      const infoSheet = XLSX.utils.aoa_to_sheet([
+        ["字段", "内容"],
+        ["主标题", state.title],
+        ["日期范围", state.dateRange],
+        ["说明", state.description]
+      ]);
+      infoSheet["!cols"] = [{ wch: 12 }, { wch: 42 }];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, tableSheet, "日程表格");
+      XLSX.utils.book_append_sheet(workbook, infoSheet, "基本信息");
+      XLSX.writeFile(workbook, filename("xlsx"), { compression: true });
+    } catch (error) {
+      window.alert(error.message || "导出 Excel 失败，请重试。");
+    }
+  }
+
+  function normalizeExcelHeader(value) {
+    return String(value ?? "").trim().toLowerCase().replace(/[\s/_-]+/g, "");
+  }
+
+  function findExcelColumns(matrix) {
+    const aliases = {
+      highlight: new Set(["重点", "是否重点", "重点日期", "highlight"]),
+      date: new Set(["日期", "date"]),
+      title: new Set(["卡片标题", "标题", "cardtitle"]),
+      label: new Set(["时间标签", "时间或标签", "时间", "标签", "label", "time"]),
+      content: new Set(["内容", "日程内容", "事项", "content"])
+    };
+    const limit = Math.min(matrix.length, 12);
+    for (let rowIndex = 0; rowIndex < limit; rowIndex += 1) {
+      const columns = { highlight: -1, date: -1, title: -1, label: -1, content: -1 };
+      matrix[rowIndex].forEach((cell, columnIndex) => {
+        const header = normalizeExcelHeader(cell);
+        Object.entries(aliases).forEach(([key, names]) => {
+          if (columns[key] < 0 && names.has(header)) columns[key] = columnIndex;
+        });
+      });
+      if (columns.date >= 0 && columns.title >= 0 && columns.content >= 0) return { rowIndex, columns };
+    }
+    throw new Error("未找到可识别的表头，请至少包含：日期、卡片标题、内容。");
+  }
+
+  function parseExcelHighlight(value) {
+    if (typeof value === "boolean") return value;
+    return /^(1|true|yes|是|重点|√|✓)$/i.test(String(value ?? "").trim());
+  }
+
+  function cellText(rowValues, index) {
+    return index >= 0 ? String(rowValues[index] ?? "").trim() : "";
+  }
+
+  function readExcelRows(matrix, header) {
+    const imported = [];
+    let inheritedDate = "";
+    let inheritedTitle = "";
+    let inheritedHighlight = false;
+    matrix.slice(header.rowIndex + 1).forEach((rowValues) => {
+      const rawDate = cellText(rowValues, header.columns.date);
+      const rawTitle = cellText(rowValues, header.columns.title);
+      const label = cellText(rowValues, header.columns.label);
+      const content = cellText(rowValues, header.columns.content);
+      const rawHighlight = cellText(rowValues, header.columns.highlight);
+      if (!rawDate && !rawTitle && !label && !content && !rawHighlight) return;
+
+      if (rawDate) inheritedDate = rawDate;
+      if (rawTitle) inheritedTitle = rawTitle;
+      if (rawHighlight) inheritedHighlight = parseExcelHighlight(rawHighlight);
+      else if (rawDate || rawTitle) inheritedHighlight = false;
+      imported.push(row(
+        rawDate || inheritedDate,
+        rawTitle || inheritedTitle,
+        label,
+        content,
+        rawHighlight ? parseExcelHighlight(rawHighlight) : inheritedHighlight
+      ));
+    });
+    if (!imported.length) throw new Error("Excel 中没有可导入的日程内容。");
+    return imported;
+  }
+
+  function readExcelInfo(workbook, XLSX) {
+    const sheet = workbook.Sheets["基本信息"];
+    if (!sheet) return null;
+    const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: false });
+    const values = new Map(matrix.slice(1).map((entry) => [String(entry[0] ?? "").trim(), String(entry[1] ?? "")]));
+    return {
+      title: values.get("主标题"),
+      dateRange: values.get("日期范围"),
+      description: values.get("说明")
+    };
+  }
+
+  async function importExcelFile(file) {
+    const XLSX = requireExcelLibrary();
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) throw new Error("Excel 文件中没有工作表。");
+    const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1, defval: "", raw: false });
+    const header = findExcelColumns(matrix);
+    state.rows = readExcelRows(matrix, header);
+
+    const info = readExcelInfo(workbook, XLSX);
+    if (info) {
+      if (info.title !== undefined) state.title = info.title;
+      if (info.dateRange !== undefined) state.dateRange = info.dateRange;
+      if (info.description !== undefined) state.description = info.description;
+    }
+    saveState();
+    syncHeaderInputs();
+    renderTable();
+    scheduleRender();
+    return state.rows.length;
+  }
+
   function parsePastedRows() {
     const lines = els.pasteInput.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     const parsed = [];
@@ -364,6 +602,7 @@
       return;
     }
     state.rows = parsed;
+    saveState();
     renderTable();
     scheduleRender();
     els.parseStatus.textContent = `已导入 ${parsed.length} 行。`;
@@ -387,6 +626,7 @@
     state.dateRange = String(input.dateRange || "");
     state.description = String(input.description || "");
     state.rows = normalizedRows;
+    saveState();
     syncHeaderInputs();
     renderTable();
     renderPreview();
@@ -439,18 +679,31 @@
     }
   }
 
-  els.title.addEventListener("input", () => { state.title = els.title.value; scheduleRender(); });
-  els.range.addEventListener("input", () => { state.dateRange = els.range.value; scheduleRender(); });
-  els.description.addEventListener("input", () => { state.description = els.description.value; scheduleRender(); });
+  els.title.addEventListener("input", () => { state.title = els.title.value; saveState(); scheduleRender(); });
+  els.range.addEventListener("input", () => { state.dateRange = els.range.value; saveState(); scheduleRender(); });
+  els.description.addEventListener("input", () => { state.description = els.description.value; saveState(); scheduleRender(); });
 
   els.rows.addEventListener("input", (event) => {
     const field = event.target.dataset.field;
     const tr = event.target.closest("tr");
     if (!field || !tr) return;
-    const item = state.rows.find((entry) => entry.id === tr.dataset.id);
-    if (!item) return;
-    item[field] = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+    const value = event.target.type === "checkbox" ? event.target.checked : event.target.value;
+    const groupIds = event.target.closest("[data-group-ids]")?.dataset.groupIds.split(",");
+    if (groupIds && ["date", "title", "highlight"].includes(field)) {
+      state.rows.forEach((item) => {
+        if (groupIds.includes(item.id)) item[field] = value;
+      });
+    } else {
+      const item = state.rows.find((entry) => entry.id === tr.dataset.id);
+      if (!item) return;
+      item[field] = value;
+    }
+    saveState();
     scheduleRender();
+  });
+
+  els.rows.addEventListener("change", (event) => {
+    if (["date", "title", "highlight"].includes(event.target.dataset.field)) renderTable();
   });
 
   els.rows.addEventListener("click", (event) => {
@@ -460,27 +713,50 @@
     const index = state.rows.findIndex((entry) => entry.id === tr.dataset.id);
     if (index < 0) return;
     const action = button.dataset.action;
+    if (action === "add-group-row") {
+      const groupIds = button.dataset.groupIds.split(",");
+      const lastIndex = state.rows.reduce((result, item, itemIndex) => groupIds.includes(item.id) ? itemIndex : result, index);
+      const source = state.rows[lastIndex];
+      const added = row(source.date, source.title, "", "", source.highlight);
+      state.rows.splice(lastIndex + 1, 0, added);
+      saveState();
+      renderTable();
+      scheduleRender();
+      requestAnimationFrame(() => els.rows.querySelector(`tr[data-id="${added.id}"] [data-field="label"]`)?.focus());
+      return;
+    }
     if (action === "delete") state.rows.splice(index, 1);
     if (action === "up" && index > 0) [state.rows[index - 1], state.rows[index]] = [state.rows[index], state.rows[index - 1]];
     if (action === "down" && index < state.rows.length - 1) [state.rows[index + 1], state.rows[index]] = [state.rows[index], state.rows[index + 1]];
+    saveState();
     renderTable();
     scheduleRender();
   });
 
   els.addRow.addEventListener("click", () => {
-    const previous = state.rows[state.rows.length - 1];
-    state.rows.push(row(previous?.date || "", previous?.title || "", "", "", previous?.highlight || false));
+    const added = row("", "", "", "", false);
+    state.rows.push(added);
+    saveState();
     renderTable();
     scheduleRender();
     requestAnimationFrame(() => {
-      const lastInput = els.rows.querySelector("tr:last-child input");
-      lastInput?.focus();
+      els.rows.querySelector(`tr[data-id="${added.id}"] [data-field="date"]`)?.focus();
     });
+  });
+
+  els.clear.addEventListener("click", () => {
+    state = { title: "", dateRange: "", description: "", rows: [row("", "", "", "", false)] };
+    saveState();
+    syncHeaderInputs();
+    renderTable();
+    scheduleRender();
+    requestAnimationFrame(() => els.title.focus());
   });
 
   els.reset.addEventListener("click", () => {
     state = clone(initialState);
     state.rows = state.rows.map((item) => ({ ...item, id: uid() }));
+    saveState();
     syncHeaderInputs();
     renderTable();
     scheduleRender();
@@ -495,6 +771,20 @@
   });
 
   els.parseRows.addEventListener("click", parsePastedRows);
+  els.exportTable.addEventListener("click", exportTable);
+  els.excelFile.addEventListener("change", async () => {
+    const file = els.excelFile.files?.[0];
+    if (!file) return;
+    els.excelStatus.textContent = "正在导入…";
+    try {
+      const count = await importExcelFile(file);
+      els.excelStatus.textContent = `已从 ${file.name} 导入 ${count} 行。`;
+    } catch (error) {
+      els.excelStatus.textContent = error.message || "导入失败，请检查表格格式。";
+    } finally {
+      els.excelFile.value = "";
+    }
+  });
   els.downloadPng.addEventListener("click", () => exportPng(1));
   els.downloadPng2x.addEventListener("click", () => exportPng(2));
   els.downloadSvg.addEventListener("click", () => {

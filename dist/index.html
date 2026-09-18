@@ -16,7 +16,10 @@
             <p class="eyebrow">SCHEDULE MAKER</p>
             <h1>日程长图生成器</h1>
           </div>
-          <button class="button button-quiet" id="resetExample" type="button">恢复示例</button>
+          <div class="header-actions">
+            <button class="button button-danger" id="clearSchedule" type="button">一键清空</button>
+            <button class="button button-quiet" id="resetExample" type="button">恢复示例</button>
+          </div>
         </header>
 
         <section class="editor-section settings-section" aria-labelledby="basic-heading">
@@ -29,15 +32,15 @@
           <div class="settings-grid">
             <label class="field field-wide">
               <span>主标题</span>
-              <input id="scheduleTitle" value="国庆日程😊" maxlength="30" />
+              <input id="scheduleTitle" value="广州旅行计划🧳" maxlength="30" />
             </label>
             <label class="field">
               <span>日期范围</span>
-              <input id="dateRange" value="9.28—10.7" maxlength="24" />
+              <input id="dateRange" value="5.1-5.5" maxlength="24" />
             </label>
             <label class="field">
               <span>说明</span>
-              <input id="scheduleDescription" value="嘉宜&amp;毛sin婚礼💐" maxlength="40" />
+              <input id="scheduleDescription" value="城市漫游・美食之旅🍜" maxlength="40" />
             </label>
           </div>
         </section>
@@ -48,18 +51,19 @@
               <span class="step-number">02</span>
               <h2 id="table-heading">日程表格</h2>
             </div>
+            <button class="button button-secondary" id="exportTable" type="button">导出表格</button>
           </div>
 
           <div class="table-wrap">
             <table class="schedule-table">
               <thead>
                 <tr>
+                  <th class="col-check">重点</th>
                   <th class="col-date">日期</th>
                   <th class="col-title">卡片标题</th>
                   <th class="col-label">时间 / 标签</th>
                   <th>内容</th>
-                  <th class="col-check">重点</th>
-                  <th class="col-actions"><span class="sr-only">操作</span></th>
+                  <th class="col-actions">操作</th>
                 </tr>
               </thead>
               <tbody id="scheduleRows"></tbody>
@@ -70,12 +74,19 @@
             <button class="button button-add-row" id="addRow" type="button">＋ 添加一行</button>
           </div>
 
-          <p class="table-hint">相邻且日期、标题相同的行会自动合并为一张卡片。时间和内容均为空时，自动生成只有粗体标题的单行卡片。</p>
+          <p class="table-hint">相邻且日期、标题相同的行会合并显示；点击标题旁的“＋”可为该卡片追加内容。时间和内容均为空时，自动生成只有粗体标题的单行卡片。</p>
 
           <details class="paste-panel">
             <summary>批量粘贴表格</summary>
+            <p>可以直接导入 Excel，或粘贴文本。表头支持：重点、日期、卡片标题、时间/标签、内容。</p>
+            <div class="excel-import-row">
+              <label class="button button-secondary file-button" for="excelFile">导入 Excel 表格</label>
+              <input class="sr-only" id="excelFile" type="file" accept=".xlsx,.xls,.xlsm,.xlsb,.ods" />
+              <span class="inline-status" id="excelStatus" aria-live="polite"></span>
+            </div>
+            <p class="paste-divider"><span>或粘贴文本</span></p>
             <p>每行依次填写：日期｜卡片标题｜时间或标签｜内容｜重点。相同日期和标题可以连续填写。</p>
-            <textarea id="pasteInput" rows="5" placeholder="9.28｜嘉宜结婚👰｜13:30｜嘉宜开始化妆💄｜重点&#10;9.28｜嘉宜结婚👰｜15:00｜到嘉宜家🚗｜重点"></textarea>
+            <textarea id="pasteInput" rows="5" placeholder="5.1｜抵达广州🚄｜11:00｜到达广州南站&#10;5.1｜抵达广州🚄｜12:00｜入住酒店，寄存行李"></textarea>
             <div class="paste-actions">
               <button class="button button-secondary" id="parseRows" type="button">解析并替换表格</button>
               <span class="inline-status" id="parseStatus" aria-live="polite"></span>
@@ -119,6 +130,7 @@
       </section>
     </main>
 
+    <script src="./vendor/xlsx.full.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
