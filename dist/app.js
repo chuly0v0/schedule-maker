@@ -48,6 +48,7 @@
     rows: document.querySelector("#scheduleRows"),
     addRow: document.querySelector("#addRow"),
     exportTable: document.querySelector("#exportTable"),
+    copyEditLink: document.querySelector("#copyEditLink"),
     clear: document.querySelector("#clearSchedule"),
     reset: document.querySelector("#resetExample"),
     canvas: document.querySelector("#scheduleCanvas"),
@@ -444,6 +445,72 @@
     return `${base}.${ext}`;
   }
 
+  function serializableSchedule() {
+    return {
+      title: state.title,
+      dateRange: state.dateRange,
+      description: state.description,
+      rows: state.rows.map((item) => ({
+        date: item.date,
+        title: item.title,
+        label: item.label,
+        content: item.content,
+        highlight: !!item.highlight
+      }))
+    };
+  }
+
+  function encodeSchedulePayload(schedule) {
+    const bytes = new TextEncoder().encode(JSON.stringify(schedule));
+    let binary = "";
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function decodeSchedulePayload(payload) {
+    if (!payload || payload.length > 200000) throw new Error("编辑链接中的日程数据无效或过长。");
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  function createEditUrl() {
+    const url = new URL(window.location.href);
+    url.hash = `schedule=${encodeSchedulePayload(serializableSchedule())}`;
+    return url.toString();
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const input = document.createElement("textarea");
+    input.value = text;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand("copy");
+    input.remove();
+    if (!copied) throw new Error("浏览器不允许自动复制，请手动复制地址栏链接。");
+  }
+
+  function importScheduleFromHash() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const payload = params.get("schedule");
+    if (!payload) return;
+    try {
+      replaceSchedule(decodeSchedulePayload(payload));
+      history.replaceState(null, "", window.location.href.split("#")[0]);
+    } catch (error) {
+      window.alert(error.message || "无法读取编辑链接中的日程数据。");
+    }
+  }
+
   function exportPng(scale) {
     const layout = buildLayout();
     const canvas = document.createElement("canvas");
@@ -702,8 +769,14 @@
       required: ["title", "dateRange", "description", "rows"],
       additionalProperties: false
     };
-    try {
-      void Promise.resolve(context.registerTool({
+    const register = (tool) => {
+      try {
+        void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(() => {});
+      } catch (_) {
+        // WebMCP is optional and unsupported browsers keep the normal UI flow.
+      }
+    };
+    register({
         name: "replace_schedule",
         title: "替换日程数据",
         description: "用结构化表格数据替换当前日程，并立即更新右侧长图预览。",
@@ -712,11 +785,51 @@
         execute(input) {
           return replaceSchedule(input);
         }
-      }, { signal: lifecycle.signal })).catch(() => {});
-    } catch (_) {
-      // WebMCP is optional and unsupported browsers keep the normal UI flow.
-    }
+    });
+    register({
+      name: "get_schedule_image",
+      title: "获取日程长图",
+      description: "返回当前日程长图的 SVG、尺寸、文件名和可继续编辑的链接。",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      annotations: { readOnlyHint: true, untrustedContentHint: false },
+      execute() {
+        const layout = buildLayout();
+        return {
+          filename: filename("svg"),
+          mimeType: "image/svg+xml",
+          width: layout.width,
+          height: layout.height,
+          svg: buildSvg(layout),
+          editUrl: createEditUrl()
+        };
+      }
+    });
+    register({
+      name: "get_schedule_edit_url",
+      title: "获取日程编辑链接",
+      description: "返回包含当前日程数据的链接，用户打开后可以继续修改。",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      annotations: { readOnlyHint: true, untrustedContentHint: false },
+      execute() {
+        return { editUrl: createEditUrl() };
+      }
+    });
   }
+
+  window.ScheduleMaker = Object.freeze({
+    replaceSchedule,
+    getSchedule: serializableSchedule,
+    getEditUrl: createEditUrl,
+    getSvg() {
+      const layout = buildLayout();
+      return {
+        filename: filename("svg"),
+        width: layout.width,
+        height: layout.height,
+        svg: buildSvg(layout)
+      };
+    }
+  });
 
   els.title.addEventListener("input", () => { state.title = els.title.value; saveState(); scheduleRender(); });
   els.range.addEventListener("input", () => { state.dateRange = els.range.value; saveState(); scheduleRender(); });
@@ -783,6 +896,18 @@
     });
   });
 
+  els.copyEditLink.addEventListener("click", async () => {
+    const originalText = els.copyEditLink.textContent;
+    try {
+      await copyText(createEditUrl());
+      els.copyEditLink.textContent = "已复制";
+    } catch (error) {
+      window.alert(error.message || "复制失败，请重试。");
+    } finally {
+      window.setTimeout(() => { els.copyEditLink.textContent = originalText; }, 1600);
+    }
+  });
+
   els.clear.addEventListener("click", () => {
     state = { title: "", dateRange: "", description: "", rows: [row("", "", "", "", false)] };
     saveState();
@@ -834,6 +959,7 @@
   window.addEventListener("resize", scheduleRender);
   if (document.fonts?.ready) document.fonts.ready.then(scheduleRender);
 
+  importScheduleFromHash();
   syncHeaderInputs();
   renderTable();
   renderPreview();

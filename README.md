@@ -9,6 +9,8 @@
 - 导入和导出 Excel 表格
 - 导出 PNG、高清 PNG 和 SVG
 - 支持 Emoji、长标签换行和重点日期标记
+- 生成包含当前内容的可编辑链接
+- 支持兼容 Agent 直接填表和获取 SVG 长图
 - 支持本地打开与 GitHub Pages 部署
 
 ## 项目结构
@@ -20,12 +22,21 @@ dist/                              GitHub Pages 实际发布目录
   styles.css                       页面样式
   favicon.svg                      网站图标
   vendor/xlsx.full.min.js          本地 Excel 读写库
+skills/schedule-maker/             自然语言转日程长图的 Agent Skill
 .github/workflows/deploy-pages.yml GitHub Pages 自动部署工作流
 ```
 
 ## 本地使用
 
 直接打开 `dist/index.html`，无需安装依赖或启动服务器。
+
+## Agent Skill
+
+`skills/schedule-maker` 可以把自然语言日程整理成网页使用的结构化数据，并生成包含这些数据的编辑链接。兼容网页工具或浏览器执行的 Agent 还可以直接取得 SVG 长图。
+
+安装到 Codex 时，将整个 `skills/schedule-maker` 文件夹复制到 `%CODEX_HOME%\skills\schedule-maker`，然后在新任务中使用 `$schedule-maker`。分享仓库后，其他用户也可以安装同一文件夹。
+
+编辑链接把日程数据编码在 URL 的 `#schedule=` 部分，不会保存到本项目的服务器。任何拿到完整链接的人都能读取其中的日程信息，请勿用它分享敏感行程。
 
 ## 部署到 GitHub Pages
 
