@@ -14,6 +14,7 @@
   const BODY_BASELINE_GAP = 30;
   const FONT_STACK = '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
   const STORAGE_KEY = "schedule-maker-draft-v1";
+  const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
   const initialState = {
     title: "广州旅行计划🧳",
@@ -457,7 +458,45 @@
     return window.XLSX;
   }
 
-  function exportTable() {
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 900);
+  }
+
+  async function saveExcelWorkbook(XLSX, workbook) {
+    const outputName = filename("xlsx");
+    const bytes = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+      compression: true
+    });
+    const excelFile = typeof File === "function"
+      ? new File([bytes], outputName, { type: XLSX_MIME })
+      : new Blob([bytes], { type: XLSX_MIME });
+
+    if (
+      isMobileDevice()
+      && typeof File === "function"
+      && excelFile instanceof File
+      && typeof navigator.share === "function"
+      && typeof navigator.canShare === "function"
+      && navigator.canShare({ files: [excelFile] })
+    ) {
+      try {
+        await navigator.share({
+          files: [excelFile],
+          title: outputName
+        });
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+
+    downloadBlob(excelFile, outputName);
+  }
+
+  async function exportTable() {
     try {
       const XLSX = requireExcelLibrary();
       const tableRows = state.rows.map((item) => ({
@@ -484,7 +523,7 @@
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, tableSheet, "日程表格");
       XLSX.utils.book_append_sheet(workbook, infoSheet, "基本信息");
-      XLSX.writeFile(workbook, filename("xlsx"), { compression: true });
+      await saveExcelWorkbook(XLSX, workbook);
     } catch (error) {
       window.alert(error.message || "导出 Excel 失败，请重试。");
     }
